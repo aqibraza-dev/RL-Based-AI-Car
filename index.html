@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI Car Racing Simulator - Watch neural networks learn to drive through neuroevolution. Design custom tracks and train AI cars in real-time.">
+    <title>AI Car Racing — Neuroevolution Self-Driving Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Main Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Top Bar - Mode Selector + Stats -->
+    <header id="topBar">
+        <div class="top-left">
+            <div class="logo">
+                <span class="logo-icon">🏎️</span>
+                <span class="logo-text">AI<span class="accent">Racer</span></span>
+            </div>
+            <div class="mode-switcher">
+                <button class="mode-btn active" data-mode="editor">
+                    <span class="mode-icon">✏️</span> Editor
+                </button>
+                <button class="mode-btn" data-mode="training">
+                    <span class="mode-icon">🧠</span> Train AI
+                </button>
+            </div>
+        </div>
+        <div class="top-stats" id="topStats">
+            <div class="stat-item">
+                <span class="stat-label">Generation</span>
+                <span class="stat-value" id="statGen">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Alive</span>
+                <span class="stat-value" id="statAlive">0 / 0</span>
+                <div class="alive-bar-wrap"><div class="alive-bar" id="aliveBar"></div></div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Best Fitness</span>
+                <span class="stat-value accent-green" id="statBestFit">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">All-Time Best</span>
+                <span class="stat-value accent-cyan" id="statBestAll">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Avg Fitness</span>
+                <span class="stat-value" id="statAvgFit">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Gen Time</span>
+                <span class="stat-value" id="statTime">0s</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Speed</span>
+                <span class="stat-value accent-amber" id="statSpeed">1x</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Left Panel - Controls -->
+    <aside id="leftPanel">
+        <!-- Editor Panel -->
+        <div class="mode-panel active" id="editorPanel">
+            <h3 class="panel-title">Track Editor</h3>
+            <p class="panel-hint">Click canvas to place points. Right-click to delete. Drag to move.</p>
+
+            <div class="control-group">
+                <label>Load Preset</label>
+                <select id="presetSelect" class="select-input">
+                    <option value="">— Select Preset —</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Saved Tracks</label>
+                <select id="savedSelect" class="select-input">
+                    <option value="">— Saved Tracks —</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Track Width: <span id="trackWidthVal">70</span></label>
+                <input type="range" id="trackWidth" min="40" max="150" value="70" class="slider">
+            </div>
+
+            <div class="control-group">
+                <label>Lanes: <span id="trackLanesVal">2</span></label>
+                <input type="range" id="trackLanes" min="1" max="5" value="2" class="slider">
+            </div>
+
+            <div class="control-group">
+                <label>Theme</label>
+                <select id="themeSelect" class="select-input">
+                    <option value="city">🌆 City Mode</option>
+                    <option value="hotwheels">🏎️ Hot Wheels Mode</option>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <button id="btnClear" class="btn btn-danger">Clear</button>
+                <button id="btnSave" class="btn btn-primary">Save</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <button class="btn btn-accent btn-full mode-btn" data-mode="training">
+                🧠 Start Training →
+            </button>
+        </div>
+
+        <!-- Training Panel -->
+        <div class="mode-panel" id="trainingPanel">
+            <h3 class="panel-title">Training Controls</h3>
+
+            <div class="btn-row">
+                <button id="btnStart" class="btn btn-accent">▶ Start</button>
+                <button id="btnPause" class="btn btn-secondary">⏸ Pause</button>
+                <button id="btnReset" class="btn btn-danger">↺ Reset</button>
+            </div>
+
+            <div class="control-group">
+                <label>Simulation Speed</label>
+                <div class="speed-row">
+                    <button class="speed-btn active" data-speed="1">1x</button>
+                    <button class="speed-btn" data-speed="2">2x</button>
+                    <button class="speed-btn" data-speed="5">5x</button>
+                    <button class="speed-btn" data-speed="10">10x</button>
+                    <button class="speed-btn" data-speed="-1">MAX</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Camera</label>
+                <div class="speed-row">
+                    <button class="cam-btn active" data-cam="follow">Follow Best</button>
+                    <button class="cam-btn" data-cam="overview">Overview</button>
+                    <button class="cam-btn" data-cam="free">Free</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <h4 style="margin: 5px 0; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Environment Params</h4>
+
+            <div class="control-group">
+                <label>Num Bots: <span id="botCountVal">0</span></label>
+                <input type="range" id="botCount" min="0" max="10" value="0" step="1" class="slider">
+            </div>
+            
+            <button id="btnConfigCar" class="btn btn-secondary btn-full" style="margin: 10px 0;">
+                🔧 Customize AI Car
+            </button>
+
+            <div class="divider"></div>
+
+            <div class="control-group">
+                <label>Population: <span id="popSizeVal">50</span></label>
+                <input type="range" id="popSize" min="10" max="100" value="50" step="5" class="slider">
+            </div>
+            <div class="control-group">
+                <label>Mutation Rate: <span id="mutRateVal">8%</span></label>
+                <input type="range" id="mutRate" min="0.01" max="0.25" value="0.08" step="0.01" class="slider">
+            </div>
+            <div class="control-group">
+                <label>Mutation Strength: <span id="mutStrVal">0.40</span></label>
+                <input type="range" id="mutStrength" min="0.1" max="1.0" value="0.4" step="0.05" class="slider">
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="toggle-row">
+                <label class="toggle-label">
+                    <input type="checkbox" id="togSensors"> Show Sensors
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="togMinimap" checked> Minimap
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="togNames"> Car IDs
+                </label>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="btn-row">
+                <button id="btnExport" class="btn btn-secondary btn-small">📥 Export Brain</button>
+                <button id="btnImport" class="btn btn-secondary btn-small">📤 Import Brain</button>
+            </div>
+
+            <button class="btn btn-outline btn-full mode-btn" data-mode="editor" style="margin-top:8px;">
+                ✏️ Back to Editor
+            </button>
+        </div>
+    </aside>
+
+    <!-- Right Panel - Leaderboard -->
+    <aside id="rightPanel">
+        <div class="right-panel-top">
+            <h3 class="panel-title">Leaderboard</h3>
+            <div class="lb-header">
+                <span>Car</span><span>Fitness</span><span>Status</span>
+            </div>
+            <div id="leaderboardList" class="lb-list"></div>
+        </div>
+        
+        <div class="divider" style="margin: 15px 0;"></div>
+        
+        <div class="right-panel-bottom">
+            <h3 class="panel-title">Top Car Simulation</h3>
+            <div id="sensorBars" class="sensor-bars">
+                <!-- Sensor bars injected via JS -->
+            </div>
+            <div class="nn-canvas-wrap">
+                <canvas id="nnCanvas"></canvas>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Bottom Bar - Fitness Graph -->
+    <div id="bottomBar">
+        <div class="graph-header">
+            <span class="graph-title">Fitness Over Generations</span>
+            <span class="graph-legend">
+                <span class="legend-dot green"></span> Best
+                <span class="legend-dot amber"></span> Average
+            </span>
+        </div>
+        <canvas id="fitnessGraph"></canvas>
+    </div>
+
+    <!-- Sensor Config Modal -->
+    <div id="sensorModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Car Customization</h3>
+                <button id="btnCloseModal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="car-preview">
+                    <canvas id="carPreviewCanvas" width="220" height="220"></canvas>
+                </div>
+                <div class="sensor-controls">
+                    <div class="control-group">
+                        <label>Front Sensors: <span id="frontSensorsVal">5</span></label>
+                        <input type="range" id="frontSensors" min="0" max="11" value="5" step="1" class="slider">
+                    </div>
+                    <div class="control-group">
+                        <label>Back Sensors: <span id="backSensorsVal">0</span></label>
+                        <input type="range" id="backSensors" min="0" max="5" value="0" step="1" class="slider">
+                    </div>
+                    <div class="control-group">
+                        <label>Left Sensors: <span id="leftSensorsVal">0</span></label>
+                        <input type="range" id="leftSensors" min="0" max="5" value="0" step="1" class="slider">
+                    </div>
+                    <div class="control-group">
+                        <label>Right Sensors: <span id="rightSensorsVal">0</span></label>
+                        <input type="range" id="rightSensors" min="0" max="5" value="0" step="1" class="slider">
+                    </div>
+                    <div class="control-group">
+                        <label>Sensor Length: <span id="sensorLengthVal">200</span></label>
+                        <input type="range" id="sensorLength" min="50" max="400" value="200" step="10" class="slider">
+                    </div>
+                    <button id="btnSaveSensors" class="btn btn-primary btn-full" style="margin-top:10px;">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
